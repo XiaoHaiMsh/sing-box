@@ -1,6 +1,6 @@
 module test
 
-go 1.25.5
+go 1.27.1
 
 require github.com/sagernet/sing-box v0.0.0
 
@@ -215,3 +215,73 @@ require (
 )
 
 replace github.com/sagernet/sing-tun => ../../sing-tun
+
+require (
+    github.com/sagernet/sing-box v0.0.0-00010101000000-000000000000
+    github.com/Diniboy1123/connect-ip-go v0.0.0-20260409225322-8d7bb0a858a2 // indirect
+    github.com/OneOfOne/xxhash v1.2.8 // indirect
+    github.com/bahlo/generic-list-go v0.2.0 // indirect
+    github.com/containerd/errdefs v1.0.0 // indirect
+    github.com/containerd/errdefs/pkg v0.3.0 // indirect
+    github.com/dunglas/httpsfv v1.1.0 // indirect
+    github.com/dustin/go-humanize v1.0.1 // indirect
+    github.com/go-playground/validator/v10 v10.30.1 // indirect
+    github.com/gobwas/ws v1.4.0 // indirect
+    github.com/golang-migrate/migrate/v4 v4.19.1 // indirect
+    github.com/gorilla/websocket v1.5.3 // indirect
+    github.com/huandu/go-sqlbuilder v1.39.1 // indirect
+    github.com/jackc/pgx/v5 v5.8.0 // indirect
+    github.com/klauspost/reedsolomon v1.12.0 // indirect
+    github.com/lib/pq v1.10.9 // indirect
+    github.com/moby/sys/atomicwriter v0.1.0 // indirect
+    github.com/ncruces/go-strftime v1.0.0 // indirect
+    github.com/panjf2000/ants/v2 v2.12.0 // indirect
+    github.com/pion/datachannel v1.6.0 // indirect
+    github.com/pion/ice/v4 v4.2.1 // indirect
+    github.com/pion/interceptor v0.1.44 // indirect
+    github.com/pion/mdns/v2 v2.1.0 // indirect
+    github.com/pion/randutil v0.1.0 // indirect
+    github.com/pion/rtcp v1.2.16 // indirect
+    github.com/pion/rtp v1.10.1 // indirect
+    github.com/pion/sctp v1.9.2 // indirect
+    github.com/pion/sdp/v3 v3.0.18 // indirect
+    github.com/pion/srtp/v3 v3.0.10 // indirect
+    github.com/pion/stun/v3 v3.1.1 // indirect
+    github.com/pion/turn/v4 v4.1.4 // indirect
+    github.com/pion/webrtc/v4 v4.2.9 // indirect
+    github.com/quic-go/quic-go v0.60.0 // indirect
+    github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+    github.com/shtorm-7/go-cache/v2 v2.1.0-extended-1.0.2 // indirect
+    github.com/shtorm-7/workerpool v0.5.0 // indirect
+    github.com/sirupsen/logrus v1.9.4 // indirect
+    github.com/tylertreat/BoomFilters v0.0.0-20251117164519-53813c36cc1b // indirect
+    github.com/wlynxg/anet v0.0.5 // indirect
+    github.com/xtaci/kcp-go/v5 v5.6.72 // indirect
+    github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+    golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10 // indirect
+    modernc.org/libc v1.72.0 // indirect
+    modernc.org/mathutil v1.7.1 // indirect
+    modernc.org/memory v1.11.0 // indirect
+    modernc.org/sqlite v1.50.0 // indirect
+    github.com/AdguardTeam/golibs v0.32.7 // indirect
+    github.com/AliRizaAynaci/gorl/v2 v2.2.0 // indirect
+    github.com/ameshkov/dnscrypt/v2 v2.4.0 // indirect
+    github.com/ameshkov/dnsstamps v1.0.3 // indirect
+    github.com/anytls/sing-anytls v0.0.11 // indirect
+    github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+    github.com/dolonet/mtg-multi v1.8.0 // indirect
+    github.com/enfein/mieru/v3 v3.33.0 // indirect
+    github.com/gabriel-vasile/mimetype v1.4.12 // indirect
+    github.com/go-playground/locales v0.14.1 // indirect
+    github.com/go-playground/universal-translator v0.18.1 // indirect
+    github.com/huandu/go-clone v1.7.3 // indirect
+    github.com/huandu/xstrings v1.4.0 // indirect
+    github.com/jackc/pgpassfile v1.0.0 // indirect
+    github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+    github.com/jackc/puddle/v2 v2.2.2 // indirect
+    github.com/leodido/go-urn v1.4.0 // indirect
+    github.com/mattn/go-isatty v0.0.23 // indirect
+    github.com/redis/go-redis/v9 v9.8.0 // indirect
+    github.com/shtorm-7/rmux v1.0.0 // indirect
+    gopkg.in/yaml.v2 v2.4.0 // indirect
+)

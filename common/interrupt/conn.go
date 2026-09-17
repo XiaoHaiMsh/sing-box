@@ -8,16 +8,30 @@ import (
 	"github.com/sagernet/sing/common/x/list"
 )
 
+/*type GroupedConn interface {
+	MarkAsInternal()
+}
+
+func MarkAsInternal(conn any) {
+	if groupedConn, isGroupConn := common.Cast[GroupedConn](conn); isGroupConn {
+		groupedConn.MarkAsInternal()
+	}
+}*/
+
 type Conn struct {
 	net.Conn
 	group   *Group
 	element *list.Element[*groupConnItem]
 }
 
+/*func (c *Conn) MarkAsInternal() {
+	c.element.Value.internal = true
+}*/
+
 func (c *Conn) Close() error {
 	c.group.access.Lock()
-	defer c.group.access.Unlock()
 	c.group.connections.Remove(c.element)
+	c.group.access.Unlock()
 	return c.Conn.Close()
 }
 
@@ -34,20 +48,22 @@ func (c *Conn) Upstream() any {
 }
 
 type PacketConn struct {
-	N.NetPacketConn
+	net.PacketConn
 	group   *Group
 	element *list.Element[*groupConnItem]
+
+	net.PacketConn
 }
 
-func newPacketConn(group *Group, conn net.PacketConn, element *list.Element[*groupConnItem]) *PacketConn {
-	return &PacketConn{NetPacketConn: bufio.NewPacketConn(conn), group: group, element: element}
-}
+/*func (c *PacketConn) MarkAsInternal() {
+	c.element.Value.internal = true
+}*/
 
 func (c *PacketConn) Close() error {
 	c.group.access.Lock()
-	defer c.group.access.Unlock()
 	c.group.connections.Remove(c.element)
-	return c.NetPacketConn.Close()
+	c.group.access.Unlock()
+	return c.PacketConn.Close()
 }
 
 func (c *PacketConn) ReaderReplaceable() bool {
@@ -59,5 +75,57 @@ func (c *PacketConn) WriterReplaceable() bool {
 }
 
 func (c *PacketConn) Upstream() any {
-	return c.NetPacketConn
+	return bufio.NewPacketConn(c.PacketConn)
+}
+
+type SingPacketConn struct {
+	N.PacketConn
+	group   *Group
+	element *list.Element[*groupConnItem]
+}
+
+/*func (c *SingPacketConn) MarkAsInternal() {
+	c.element.Value.internal = true
+}*/
+
+func (c *SingPacketConn) Close() error {
+	c.group.access.Lock()
+	c.group.connections.Remove(c.element)
+	c.group.access.Unlock()
+	return c.PacketConn.Close()
+}
+
+func (c *SingPacketConn) ReaderReplaceable() bool {
+	return true
+}
+
+func (c *SingPacketConn) WriterReplaceable() bool {
+	return true
+}
+
+func (c *SingPacketConn) Upstream() any {
+	return c.PacketConn
+}
+
+/*func (c *SingPacketConn) MarkAsInternal() {
+	c.element.Value.internal = true
+}*/
+
+func (c *SingPacketConn) Close() error {
+	c.group.access.Lock()
+	c.group.connections.Remove(c.element)
+	c.group.access.Unlock()
+	return c.PacketConn.Close()
+}
+
+func (c *SingPacketConn) ReaderReplaceable() bool {
+	return true
+}
+
+func (c *SingPacketConn) WriterReplaceable() bool {
+	return true
+}
+
+func (c *SingPacketConn) Upstream() any {
+	return c.PacketConn
 }

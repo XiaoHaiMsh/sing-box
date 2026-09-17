@@ -34,6 +34,7 @@ type UDPInjectableInbound interface {
 type InboundRegistry interface {
 	option.InboundOptionsRegistry
 	Create(ctx context.Context, router Router, logger log.ContextLogger, tag string, inboundType string, options any) (Inbound, error)
+	UnsafeCreate(ctx context.Context, router Router, logger log.ContextLogger, tag string, inboundType string, options any) (Inbound, error)
 }
 
 type InboundManager interface {
@@ -51,6 +52,7 @@ type InboundContext struct {
 	Network     string
 	Source      M.Socksaddr
 	Destination M.Socksaddr
+	Gateway     *netip.Addr
 	User        string
 	Outbound    string
 
@@ -187,16 +189,6 @@ func ContextWithDNSTransportTag(ctx context.Context, transportTag string) contex
 func DNSTransportTagFromContext(ctx context.Context) (string, bool) {
 	transportTag, loaded := ctx.Value((*dnsTransportTagKey)(nil)).(string)
 	return transportTag, loaded
-}
-
-func ContextForMultiplexSession(ctx context.Context) context.Context {
-	var sessionContext InboundContext
-	metadata := ContextFrom(ctx)
-	if metadata != nil {
-		sessionContext.Outbound = metadata.Outbound
-	}
-	ctx = ContextWithDNSTransportTag(ctx, "")
-	return WithContext(ctx, &sessionContext)
 }
 
 func WithContext(ctx context.Context, inboundContext *InboundContext) context.Context {

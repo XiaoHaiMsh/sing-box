@@ -1,15 +1,14 @@
 package option
 
-import (
-	"github.com/sagernet/sing/common/byteformats"
-	"github.com/sagernet/sing/common/json/badoption"
-)
+import "github.com/sagernet/sing/common/json/badoption"
 
 type ExperimentalOptions struct {
 	CacheFile *CacheFileOptions `json:"cache_file,omitempty"`
 	ClashAPI  *ClashAPIOptions  `json:"clash_api,omitempty"`
 	V2RayAPI  *V2RayAPIOptions  `json:"v2ray_api,omitempty"`
 	Debug     *DebugOptions     `json:"debug,omitempty"`
+
+	UnifiedDelay *UnifiedDelayOptions `json:"unified_delay,omitempty"`
 }
 
 type CacheFileOptions struct {
@@ -25,6 +24,10 @@ type CacheFileOptions struct {
 	StoreRDRC bool `json:"store_rdrc,omitempty" schema:"omit"`
 	// Deprecated: replaced by store_dns
 	RDRCTimeout badoption.Duration `json:"rdrc_timeout,omitempty" schema:"omit"`
+
+	StoreWARPConfig    bool `json:"store_warp_config,omitempty"`
+	StoreMASQUEConfig  bool `json:"store_masque_config,omitempty"`
+	StoreSubscriptions bool `json:"store_subscriptions,omitempty"`
 }
 
 type ClashAPIOptions struct {
@@ -34,6 +37,7 @@ type ClashAPIOptions struct {
 	ExternalUIDownloadDetour         string                     `json:"external_ui_download_detour,omitempty" reference:"outbound"`
 	Secret                           string                     `json:"secret,omitempty"`
 	DefaultMode                      string                     `json:"default_mode,omitempty"`
+	ModeList                         []string                   `json:"-"`
 	AccessControlAllowOrigin         badoption.Listable[string] `json:"access_control_allow_origin,omitempty"`
 	AccessControlAllowPrivateNetwork bool                       `json:"access_control_allow_private_network,omitempty"`
 
@@ -59,4 +63,8 @@ type V2RayStatsServiceOptions struct {
 	Inbounds  []string `json:"inbounds,omitempty"`
 	Outbounds []string `json:"outbounds,omitempty"`
 	Users     []string `json:"users,omitempty"`
+}
+
+type UnifiedDelayOptions struct {
+	Enabled bool `json:"enabled,omitempty"`
 }

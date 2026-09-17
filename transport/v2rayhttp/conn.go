@@ -130,11 +130,10 @@ func (c *HTTPConn) Upstream() any {
 }
 
 type HTTP2Conn struct {
-	reader  io.Reader
-	writer  io.Writer
-	create  chan struct{}
-	err     error
-	onClose func()
+	reader io.Reader
+	writer io.Writer
+	create chan struct{}
+	err    error
 }
 
 func NewHTTPConn(reader io.Reader, writer io.Writer) HTTP2Conn {
@@ -174,11 +173,7 @@ func (c *HTTP2Conn) Write(b []byte) (n int, err error) {
 }
 
 func (c *HTTP2Conn) Close() error {
-	err := common.Close(c.reader, c.writer)
-	if c.onClose != nil {
-		c.onClose()
-	}
-	return err
+	return common.Close(c.reader, c.writer)
 }
 
 func (c *HTTP2Conn) LocalAddr() net.Addr {
@@ -269,4 +264,15 @@ func DupContext(ctx context.Context) context.Context {
 		return context.Background()
 	}
 	return log.ContextWithID(context.Background(), id)
+}
+
+func HWIDContext(ctx context.Context, headers http.Header) context.Context {
+	for key, values := range headers {
+		if strings.ToLower(key) == "x-hwid" {
+			if len(values) != 0 {
+				return context.WithValue(ctx, "hwid", values[0])
+			}
+		}
+	}
+	return ctx
 }

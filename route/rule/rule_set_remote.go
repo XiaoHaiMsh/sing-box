@@ -197,7 +197,7 @@ func (s *RemoteRuleSet) loadBytes(content []byte) error {
 	default:
 		return E.New("unknown rule-set format: ", s.options.Format)
 	}
-	plainRuleSet, err := mmapRuleSet(s.ctx, s.logger, s.tag, ruleSet).Upgrade()
+	plainRuleSet, err := ruleSet.Upgrade()
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func (s *RemoteRuleSet) fetch(ctx context.Context, isStart bool) error {
 				}
 			}
 		}
-		s.logger.Info("update rule-set ", s.tag, ": not modified")
+		s.logger.Notice("update rule-set ", s.tag, ": not modified")
 		return nil
 	default:
 		return E.New("unexpected status: ", response.Status)
@@ -295,7 +295,7 @@ func (s *RemoteRuleSet) fetch(ctx context.Context, isStart bool) error {
 			s.logger.Error("save rule-set cache: ", err)
 		}
 	}
-	s.logger.Info("updated rule-set ", s.tag)
+	s.logger.Notice("updated rule-set ", s.tag)
 	return nil
 }
 

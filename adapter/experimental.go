@@ -8,8 +8,17 @@ import (
 	"time"
 
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/observable"
 	"github.com/sagernet/sing/common/varbin"
 )
+
+type ClashServer interface {
+	LifecycleService
+	Mode() string
+	ModeList() []string
+	SetMode(mode string)
+	AddModeUpdateHook(hook *observable.Subscriber[struct{}])
+}
 
 type URLTestHistory struct {
 	Time  time.Time `json:"time"`
@@ -32,12 +41,15 @@ type CacheFile interface {
 	StoreRDRC() bool
 	RDRCStore
 
+	StoreWARPConfig() bool
+	StoreMASQUEConfig() bool
+	StoreSubscriptions() bool
+
 	StoreDNS() bool
 	DNSCacheStore
 
 	SetDisableExpire(disableExpire bool)
 	SetOptimisticTimeout(timeout time.Duration)
-	Flush()
 
 	LoadMode() string
 	StoreMode(mode string) error
@@ -47,6 +59,12 @@ type CacheFile interface {
 	StoreGroupExpand(group string, expand bool) error
 	LoadRuleSet(tag string) *SavedBinary
 	SaveRuleSet(tag string, set *SavedBinary) error
+	LoadWARPConfig(tag string) *SavedBinary
+	SaveWARPConfig(tag string, set *SavedBinary) error
+	LoadMASQUEConfig(tag string) *SavedBinary
+	SaveMASQUEConfig(tag string, set *SavedBinary) error
+	LoadSubscription(tag string) *SavedBinary
+	SaveSubscription(tag string, sub *SavedBinary) error
 }
 
 type SavedBinary struct {

@@ -152,9 +152,9 @@ func (m *Manager) startOutbounds(outbounds []adapter.Outbound) error {
 			if common.Contains(oTree, problemOutboundTag) {
 				return E.New("circular outbound dependency: ", strings.Join(oTree, " -> "), " -> ", problemOutboundTag)
 			}
-			problemOutbound := common.Find(outbounds, func(it adapter.Outbound) bool {
-				return it.Tag() == problemOutboundTag
-			})
+			m.access.Lock()
+			problemOutbound := m.outboundByTag[problemOutboundTag]
+			m.access.Unlock()
 			if problemOutbound == nil {
 				return E.New("dependency[", problemOutboundTag, "] not found for outbound[", oCurrent.Tag(), "]")
 			}
@@ -233,7 +233,7 @@ func (m *Manager) Remove(tag string) error {
 	if m.defaultOutbound == outbound {
 		if len(m.outbounds) > 0 {
 			m.defaultOutbound = m.outbounds[0]
-			m.logger.Info("updated default outbound to ", m.defaultOutbound.Tag())
+			m.logger.Notice("updated default outbound to ", m.defaultOutbound.Tag())
 		} else {
 			m.defaultOutbound = nil
 		}
@@ -303,7 +303,7 @@ func (m *Manager) Create(ctx context.Context, router adapter.Router, logger log.
 	if tag == m.defaultTag || (m.defaultTag == "" && m.defaultOutbound == nil) {
 		m.defaultOutbound = outbound
 		if m.started {
-			m.logger.Info("updated default outbound to ", outbound.Tag())
+			m.logger.Notice("updated default outbound to ", outbound.Tag())
 		}
 	}
 	return nil

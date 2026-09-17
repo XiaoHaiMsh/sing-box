@@ -36,7 +36,22 @@ func newSystemDevice(options DeviceOptions) (*systemDevice, error) {
 	if options.Name == "" {
 		options.Name = tun.CalculateInterfaceName("wg")
 	}
-	inet4Address, inet6Address := deviceAddresses(options.Address)
+	var inet4Address netip.Addr
+	var inet6Address netip.Addr
+	if len(options.Address) > 0 {
+		if prefix := common.Find(options.Address, func(it netip.Prefix) bool {
+			return it.Addr().Is4()
+		}); prefix.IsValid() {
+			inet4Address = prefix.Addr()
+		}
+	}
+	if len(options.Address) > 0 {
+		if prefix := common.Find(options.Address, func(it netip.Prefix) bool {
+			return it.Addr().Is6()
+		}); prefix.IsValid() {
+			inet6Address = prefix.Addr()
+		}
+	}
 	return &systemDevice{
 		options:      options,
 		dialer:       options.CreateDialer(options.Name),
@@ -100,7 +115,7 @@ func (w *systemDevice) Start() error {
 		tunInterface.Close()
 		return err
 	}
-	w.options.Logger.Info("started at ", w.options.Name)
+	w.options.Logger.Notice("started at ", w.options.Name)
 	w.device = tunInterface
 	batchTUN, isBatchTUN := tunInterface.(tun.LinuxTUN)
 	if isBatchTUN && batchTUN.BatchSize() > 1 {

@@ -1,7 +1,6 @@
 package srs
 
 import (
-	"bufio"
 	"encoding/binary"
 	"io"
 	"net/netip"
@@ -11,7 +10,7 @@ import (
 	"github.com/sagernet/sing/common/varbin"
 )
 
-func ReadPrefix(reader varbin.Reader) (netip.Prefix, error) {
+func readPrefix(reader varbin.Reader) (netip.Prefix, error) {
 	addrLen, err := binary.ReadUvarint(reader)
 	if err != nil {
 		return netip.Prefix{}, err
@@ -31,7 +30,7 @@ func ReadPrefix(reader varbin.Reader) (netip.Prefix, error) {
 	return netip.PrefixFrom(M.AddrFromIP(addrBytes[:addrLen]), int(prefixBits)), nil
 }
 
-func WritePrefix(writer varbin.Writer, prefix netip.Prefix) error {
+func writePrefix(writer varbin.Writer, prefix netip.Prefix) error {
 	addrSlice := prefix.Addr().AsSlice()
 	_, err := varbin.WriteUvarint(writer, uint64(len(addrSlice)))
 	if err != nil {

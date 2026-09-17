@@ -51,6 +51,10 @@ func (p *linuxPlatformInterface) AutoDetectInterfaceControl(fd int) error {
 	return os.ErrInvalid
 }
 
+func (p *linuxPlatformInterface) BindInterfaceControl(fd int, interfaceName string) error {
+	return os.ErrInvalid
+}
+
 func (p *linuxPlatformInterface) UsePlatformInterface() bool {
 	return false
 }
@@ -198,14 +202,6 @@ func (p *linuxPlatformInterface) UsePlatformBridge() bool {
 }
 
 func (p *linuxPlatformInterface) CreateBridge(options adapter.BridgeOptions) (adapter.BridgeSession, error) {
-	return nil, os.ErrInvalid
-}
-
-func (p *linuxPlatformInterface) UsePlatformAutoRedirect() bool {
-	return false
-}
-
-func (p *linuxPlatformInterface) CreateAutoRedirect(options adapter.AutoRedirectOptions) (adapter.AutoRedirectSession, error) {
 	return nil, os.ErrInvalid
 }
 

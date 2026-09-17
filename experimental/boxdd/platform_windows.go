@@ -65,6 +65,10 @@ func (p *windowsPlatformInterface) AutoDetectInterfaceControl(fd int) error {
 	return os.ErrInvalid
 }
 
+func (p *windowsPlatformInterface) BindInterfaceControl(fd int, interfaceName string) error {
+	return os.ErrInvalid
+}
+
 func (p *windowsPlatformInterface) UsePlatformInterface() bool {
 	return false
 }
@@ -238,14 +242,6 @@ func (p *windowsPlatformInterface) UsePlatformBridge() bool {
 }
 
 func (p *windowsPlatformInterface) CreateBridge(options adapter.BridgeOptions) (adapter.BridgeSession, error) {
-	return nil, os.ErrInvalid
-}
-
-func (p *windowsPlatformInterface) UsePlatformAutoRedirect() bool {
-	return false
-}
-
-func (p *windowsPlatformInterface) CreateAutoRedirect(options adapter.AutoRedirectOptions) (adapter.AutoRedirectSession, error) {
 	return nil, os.ErrInvalid
 }
 

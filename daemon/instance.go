@@ -9,16 +9,13 @@ import (
 	"github.com/sagernet/sing-box/common/trafficcontrol"
 	"github.com/sagernet/sing-box/common/urltest"
 	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/experimental/clashmode"
 	"github.com/sagernet/sing-box/experimental/deprecated"
 	"github.com/sagernet/sing-box/experimental/locale"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing-box/service/powerreport"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/json"
-	"github.com/sagernet/sing/common/x/list"
 	"github.com/sagernet/sing/service"
 	"github.com/sagernet/sing/service/pause"
 )
@@ -28,11 +25,10 @@ type Instance struct {
 	cancel                context.CancelFunc
 	instance              *box.Box
 	connectionManager     adapter.ConnectionManager
-	clashMode             *clashmode.Manager
+	clashServer           adapter.ClashServer
 	trafficManager        *trafficcontrol.Manager
 	cacheFile             adapter.CacheFile
 	pauseManager          pause.Manager
-	pauseCallback         *list.Element[pause.Callback]
 	urlTestHistoryStorage *urltest.HistoryStorage
 	outboundManager       adapter.OutboundManager
 	endpointManager       adapter.EndpointManager
@@ -42,7 +38,6 @@ type Instance struct {
 func (s *StartedService) CheckConfig(ctx context.Context, configContent string) error {
 	selectedLocale := locale.FromContext(ctx)
 	ctx, _ = locale.ContextWithLocale(s.ctx, selectedLocale.Locale)
-	ctx = service.ExtendContext(ctx)
 	options, err := parseConfig(ctx, configContent)
 	if err != nil {
 		return err
@@ -82,7 +77,7 @@ type OverrideOptions struct {
 	ExcludePackage []string
 }
 
-func (s *StartedService) newInstance(ctx context.Context, profileContent string, overrideOptions *OverrideOptions, reloading bool) (*Instance, error) {
+func (s *StartedService) newInstance(ctx context.Context, profileContent string, overrideOptions *OverrideOptions) (*Instance, error) {
 	selectedLocale := locale.FromContext(ctx)
 	ctx, _ = locale.ContextWithLocale(s.ctx, selectedLocale.Locale)
 	ctx = service.ExtendContext(ctx)
@@ -96,7 +91,7 @@ func (s *StartedService) newInstance(ctx context.Context, profileContent string,
 	if overrideOptions != nil {
 		for _, inbound := range options.Inbounds {
 			if tunInboundOptions, isTUN := inbound.Options.(*option.TunInboundOptions); isTUN {
-				tunInboundOptions.AutoRedirect = overrideOptions.AutoRedirect && tunInboundOptions.AutoRoute
+				tunInboundOptions.AutoRedirect = overrideOptions.AutoRedirect
 				tunInboundOptions.IncludePackage = append(tunInboundOptions.IncludePackage, overrideOptions.IncludePackage...)
 				tunInboundOptions.ExcludePackage = append(tunInboundOptions.ExcludePackage, overrideOptions.ExcludePackage...)
 				break
@@ -119,11 +114,6 @@ func (s *StartedService) newInstance(ctx context.Context, profileContent string,
 	}
 	urlTestHistoryStorage := urltest.NewHistoryStorage()
 	ctx = service.ContextWithPtr(ctx, urlTestHistoryStorage)
-	i := &Instance{
-		ctx:                   ctx,
-		cancel:                cancel,
-		urlTestHistoryStorage: urlTestHistoryStorage,
-	}
 	boxInstance, err := box.New(box.Options{
 		Context:           ctx,
 		Options:           options,
@@ -133,12 +123,20 @@ func (s *StartedService) newInstance(ctx context.Context, profileContent string,
 		cancel()
 		return nil, err
 	}
+	experimentalOptions := common.PtrValueOrDefault(options.Experimental)
+	if experimentalOptions.UnifiedDelay != nil && experimentalOptions.UnifiedDelay.Enabled {
+		ctx = urltest.ContextWithIsUnifiedDelay(ctx)
+	}
+	i := &Instance{
+		ctx:                   ctx,
+		cancel:                cancel,
+		urlTestHistoryStorage: urlTestHistoryStorage,
+	}
 	i.instance = boxInstance
 	i.connectionManager = service.FromContext[adapter.ConnectionManager](ctx)
-	i.clashMode = service.PtrFromContext[clashmode.Manager](ctx)
+	i.clashServer = service.FromContext[adapter.ClashServer](ctx)
 	i.trafficManager = service.PtrFromContext[trafficcontrol.Manager](ctx)
 	i.pauseManager = service.FromContext[pause.Manager](ctx)
-	i.registerPowerReport(ctx, reloading)
 	i.cacheFile = service.FromContext[adapter.CacheFile](ctx)
 	i.outboundManager = service.FromContext[adapter.OutboundManager](ctx)
 	i.endpointManager = service.FromContext[adapter.EndpointManager](ctx)
@@ -151,7 +149,7 @@ func attachInstance(ctx context.Context) *Instance {
 	return &Instance{
 		ctx:                   ctx,
 		connectionManager:     service.FromContext[adapter.ConnectionManager](ctx),
-		clashMode:             service.PtrFromContext[clashmode.Manager](ctx),
+		clashServer:           service.FromContext[adapter.ClashServer](ctx),
 		trafficManager:        service.PtrFromContext[trafficcontrol.Manager](ctx),
 		pauseManager:          service.FromContext[pause.Manager](ctx),
 		cacheFile:             service.FromContext[adapter.CacheFile](ctx),
@@ -168,32 +166,8 @@ func (i *Instance) Start() error {
 
 func (i *Instance) Close() error {
 	i.cancel()
-	if i.pauseCallback != nil {
-		i.pauseManager.UnregisterCallback(i.pauseCallback)
-		i.pauseCallback = nil
-	}
 	i.urlTestHistoryStorage.Close()
 	return i.instance.Close()
-}
-
-func (i *Instance) registerPowerReport(ctx context.Context, reloading bool) {
-	powerManager := service.FromContext[*powerreport.Manager](ctx)
-	if powerManager == nil {
-		return
-	}
-	recorder := powerManager.Recorder()
-	if recorder != nil {
-		recorder.RecordServiceStart(i.instance.CreatedAt(), reloading)
-	}
-	if i.pauseManager == nil {
-		return
-	}
-	i.pauseCallback = i.pauseManager.RegisterCallback(func(event int) {
-		recorder := powerManager.Recorder()
-		if recorder != nil {
-			recorder.RecordPauseEvent(event)
-		}
-	})
 }
 
 func (i *Instance) Box() *box.Box {

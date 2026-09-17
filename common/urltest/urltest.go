@@ -9,11 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sagernet/sing-anytls"
 	"github.com/sagernet/sing-box/adapter"
 	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-mux"
-	"github.com/sagernet/sing-snell"
 	"github.com/sagernet/sing/common"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -84,12 +81,7 @@ func (s *HistoryStorage) Close() error {
 func URLTest(ctx context.Context, link string, detour N.Dialer) (uint16, error) {
 	multiplexOutbound, isMultiplexOutbound := common.Cast[adapter.OutboundWithMultiplex](detour)
 	if isMultiplexOutbound && multiplexOutbound.MultiplexEnabled() {
-		warmContext := adapter.ContextWithKeepSession(ctx)
-		warmContext = mux.ContextWithKeepSession(warmContext)
-		warmContext = anytls.ContextWithKeepSession(warmContext)
-		warmContext = contextWithQUICKeepSession(warmContext)
-		warmContext = snell.ContextWithKeepSession(warmContext)
-		_, err := urlTest(warmContext, link, detour)
+		_, err := urlTest(ctx, link, detour)
 		if err != nil {
 			return 0, err
 		}
@@ -150,6 +142,15 @@ func urlTest(ctx context.Context, link string, detour N.Dialer) (t uint16, err e
 		return
 	}
 	resp.Body.Close()
+	if IsUnifiedDelayFromContext(ctx) {
+		second := time.Now()
+		resp, err = client.Do(req)
+		if err != nil {
+			return
+		}
+		resp.Body.Close()
+		start = second
+	}
 	t = uint16(time.Since(start) / time.Millisecond)
 	return
 }

@@ -40,7 +40,6 @@ type Inbound struct {
 	fallbackAddr             M.Socksaddr
 	fallbackAddrTLSNextProto map[string]M.Socksaddr
 	transport                adapter.V2RayServerTransport
-	references               []string
 }
 
 func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.TrojanInboundOptions) (adapter.Inbound, error) {
@@ -62,9 +61,6 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 			return nil, err
 		}
 		inbound.tlsConfig = tlsConfig
-		if options.TLS.Reality != nil && options.TLS.Reality.Enabled && options.TLS.Reality.Handshake.Detour != "" {
-			inbound.references = []string{options.TLS.Reality.Handshake.Detour}
-		}
 	}
 	var fallbackHandler N.TCPConnectionHandlerEx
 	if options.Fallback != nil && options.Fallback.Server != "" || len(options.FallbackForALPN) > 0 {
@@ -168,6 +164,14 @@ func (h *Inbound) Close() error {
 	)
 }
 
+func (h *Inbound) UpdateUsers(users []option.TrojanUser) {
+	h.service.UpdateUsers(common.MapIndexed(users, func(index int, _ option.TrojanUser) int {
+		return index
+	}), common.Map(users, func(it option.TrojanUser) string {
+		return it.Password
+	}))
+}
+
 func (h *Inbound) NewConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext, onClose N.CloseHandlerFunc) {
 	if h.tlsConfig != nil && h.transport == nil {
 		tlsConn, err := tls.ServerHandshake(ctx, conn, h.tlsConfig)
@@ -263,8 +267,4 @@ func (h *inboundTransportHandler) NewConnectionEx(ctx context.Context, conn net.
 	//nolint:staticcheck
 	h.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
 	(*Inbound)(h).NewConnection(ctx, conn, metadata, onClose)
-}
-
-func (h *Inbound) References() []string {
-	return h.references
 }

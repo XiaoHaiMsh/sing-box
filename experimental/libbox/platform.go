@@ -6,6 +6,7 @@ type PlatformInterface interface {
 	LocalDNSTransport() LocalDNSTransport
 	UsePlatformAutoDetectInterfaceControl() bool
 	AutoDetectInterfaceControl(fd int32) error
+	BindInterfaceControl(fd int32, interfaceName string) error
 	OpenTun(options TunOptions) (int32, error)
 	UseProcFS() bool
 	FindConnectionOwner(ipProtocol int32, sourceAddress string, sourcePort int32, destinationAddress string, destinationPort int32) (*ConnectionOwner, error)
@@ -30,20 +31,6 @@ type PlatformInterface interface {
 	TailscaleHostname() string
 	UsePlatformBridge() bool
 	CreateBridge(options *BridgeOptions) (BridgeSession, error)
-	UsePlatformAutoRedirect() bool
-	CreateAutoRedirect(options []byte, handler AutoRedirectHandler) (AutoRedirectSession, error)
-}
-
-type AutoRedirectHandler interface {
-	JudgeFlow(ipProtocol int32, sourceAddress string, sourcePort int32, destinationAddress string, destinationPort int32, firstPacket []byte) (int32, error)
-	RedirectListenerFileDescriptor() (int32, error)
-	RouteAddressSetFileDescriptor() (int32, error)
-	WriteLog(level int32, message string)
-}
-
-type AutoRedirectSession interface {
-	Close() error
-	UpdateRouteAddressSet() error
 }
 
 type BridgeOptions struct {
@@ -90,16 +77,7 @@ type ConnectionOwner struct {
 	UserId              int32
 	UserName            string
 	ProcessPath         string
-	processPaths        []string
 	androidPackageNames []string
-}
-
-func (c *ConnectionOwner) SetProcessPaths(paths StringIterator) {
-	c.processPaths = iteratorToArray[string](paths)
-}
-
-func (c *ConnectionOwner) ProcessPaths() StringIterator {
-	return newIterator(c.processPaths)
 }
 
 func (c *ConnectionOwner) SetAndroidPackageNames(names StringIterator) {
@@ -112,7 +90,6 @@ func (c *ConnectionOwner) AndroidPackageNames() StringIterator {
 
 type InterfaceUpdateListener interface {
 	UpdateDefaultInterface(interfaceName string, interfaceIndex int32, isExpensive bool, isConstrained bool)
-	UpdateNetworkPath(networkPath string)
 }
 
 const (

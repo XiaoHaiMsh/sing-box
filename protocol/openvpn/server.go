@@ -17,7 +17,6 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing-box/service/oomkiller"
 	ovpntransport "github.com/sagernet/sing-box/transport/openvpn"
 	ovpn "github.com/sagernet/sing-openvpn"
 	"github.com/sagernet/sing-tun"
@@ -43,7 +42,6 @@ type ServerEndpoint struct {
 	dnsRouter      adapter.DNSRouter
 	listener       *listener.Listener
 	server         *ovpn.Server
-	deviceOptions  *ovpntransport.DeviceOptions
 	device         ovpntransport.Device
 	localAddresses []netip.Prefix
 	started        atomic.Bool
@@ -104,7 +102,7 @@ func NewServerEndpoint(ctx context.Context, router adapter.Router, logger log.Co
 	if options.UDPTimeout != 0 {
 		udpTimeout = time.Duration(options.UDPTimeout)
 	}
-	serverEndpoint.deviceOptions = &ovpntransport.DeviceOptions{
+	device, err := ovpntransport.NewDevice(ovpntransport.DeviceOptions{
 		Context:         ctx,
 		Logger:          logger,
 		System:          options.System,
@@ -122,7 +120,13 @@ func NewServerEndpoint(ctx context.Context, router adapter.Router, logger log.Co
 			Address:  options.Address,
 			Topology: options.Topology,
 		},
+	})
+	if err != nil {
+		cancelLoop()
+		return nil, err
 	}
+	serverEndpoint.device = device
+	device.SetPacketWriter(serverEndpoint.writePacketBuffersByDestination)
 	return serverEndpoint, nil
 }
 
@@ -158,17 +162,6 @@ func validateServerTopology(topology string) error {
 }
 
 func (s *ServerEndpoint) Start(stage adapter.StartStage) error {
-	if stage == adapter.StartStateInitialize {
-		s.deviceOptions.MemoryPressure = oomkiller.MemoryPressure(s.ctx)
-		device, err := ovpntransport.NewDevice(*s.deviceOptions)
-		if err != nil {
-			return err
-		}
-		device.SetPacketWriter(s.writePacketBuffersByDestination)
-		s.device = device
-		s.deviceOptions = nil
-		return nil
-	}
 	if stage != adapter.StartStateStart {
 		return nil
 	}
@@ -215,6 +208,7 @@ func (s *ServerEndpoint) Start(stage adapter.StartStage) error {
 					Control:          listenConfig.Control,
 					InterfaceFinder:  networkManager.InterfaceFinder(),
 					InterfaceMonitor: networkManager.InterfaceMonitor(),
+					ExcludeInterface: s.options.Name,
 					IsExempt: func() bool {
 						return networkManager.AutoRedirectOutputMark() != 0
 					},
@@ -303,7 +297,7 @@ func buildServerOptions(options option.OpenVPNServerEndpointOptions) (ovpn.Serve
 	if options.TLS == nil {
 		return ovpn.ServerOptions{}, E.New("missing `tls` options")
 	}
-	if len(options.StaticKey) > 0 || options.StaticKeyPath != "" || options.KeyDirection != "" || options.Cipher != "" || options.Remote != "" || options.RemotePort != 0 || options.PeerAddress.Build(netip.Addr{}).IsValid() || options.PeerAddressIPv6.Build(netip.Addr{}).IsValid() {
+	if len(options.StaticKey) > 0 || options.StaticKeyPath != "" || options.KeyDirection != "" || options.Cipher != "" || options.Remote != "" || options.RemotePort != 0 || netip.Addr(options.PeerAddress).IsValid() || netip.Addr(options.PeerAddressIPv6).IsValid() {
 		return ovpn.ServerOptions{}, E.New("static-key server options require `mode: static_key`")
 	}
 	tlsOptions, keyDirection, err := buildServerTLSOptions(*options.TLS)
@@ -373,11 +367,11 @@ func buildStaticKeyServerOptions(options option.OpenVPNServerEndpointOptions, pr
 	if err != nil {
 		return ovpn.ServerOptions{}, err
 	}
-	vpnGateway := options.PeerAddress.Build(netip.Addr{})
+	vpnGateway := netip.Addr(options.PeerAddress)
 	if vpnGateway.IsValid() && !vpnGateway.Is4() {
 		return ovpn.ServerOptions{}, E.New("`peer_address` must be an IPv4 address")
 	}
-	vpnGatewayIPv6 := options.PeerAddressIPv6.Build(netip.Addr{})
+	vpnGatewayIPv6 := netip.Addr(options.PeerAddressIPv6)
 	if vpnGatewayIPv6.IsValid() && !vpnGatewayIPv6.Is6() {
 		return ovpn.ServerOptions{}, E.New("`peer_address_ipv6` must be an IPv6 address")
 	}

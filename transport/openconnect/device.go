@@ -51,6 +51,8 @@ type DeviceOptions struct {
 	Name            string
 	MTU             uint32
 	Configuration   Configuration
+
+	ExcludeInterface []string
 }
 
 type Configuration struct {
@@ -86,24 +88,10 @@ func NewDevice(options DeviceOptions) (Device, error) {
 	if !options.System {
 		return newStackDevice(options)
 	}
+	if !tun.WithGVisor {
+		return newSystemDevice(options)
+	}
 	return newSystemStackDevice(options)
-}
-
-func newStack(options DeviceOptions, memoryTun *tun.MemoryTun) (*tun.Go, error) {
-	return tun.NewGo(tun.StackOptions{
-		Context:         options.Context,
-		Tun:             memoryTun,
-		TunOptions:      tun.Options{MTU: options.MTU},
-		UDPTimeout:      options.UDPTimeout,
-		ICMPTimeout:     options.ICMPTimeout,
-		UDPMapping:      options.UDPMapping,
-		UDPFiltering:    options.UDPFiltering,
-		UDPNATMax:       options.UDPNATMax,
-		Handler:         options.Handler,
-		Logger:          options.Logger,
-		InterfaceFinder: options.InterfaceFinder,
-		MemoryPressure:  options.MemoryPressure,
-	})
 }
 
 type baseDevice struct {
